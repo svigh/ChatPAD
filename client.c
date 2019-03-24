@@ -183,13 +183,12 @@ int main(int argc, char **argv)
 				}
 				else
 				{
-					printf("Not APPROVED\n\tUSER NOT IN DATABASE\n");
+					printf("Not APPROVED\n\tUSER NOT IN DATABASE OR ALREADY ACTIVE\n");
 					exit(-1);
 				}
 				break;
-
 			default:
-				printf("Option doesn't exist\n");
+				exit(-1);
 		}
 	}
 	// fgets(msg, 500, stdin);

@@ -35,7 +35,7 @@ struct PACKET{
 struct USER{
 	char username[100];
 	char password[100];
-}existingUsers[MAX_ALLOWED_USERS];
+}existingUsers[MAX_ALLOWED_USERS], activeUsers[MAX_ALLOWED_USERS];
 
 typedef struct PACKET Packet;
 typedef struct USER User;
@@ -58,7 +58,7 @@ void send_to_all(char *msg,int curr)
 int userExists(Packet newUser)
 {
 	int i;
-	pthread_mutex_lock(&mutex2);
+	// pthread_mutex_lock(&mutex2);
 	for(i = 0; i < totalUsers; i++)
 	{
 		if(((strcmp(existingUsers[i].username, newUser.username)) == 0) && ((strcmp(existingUsers[i].password, newUser.password)) == 0) )
@@ -72,8 +72,40 @@ int userExists(Packet newUser)
 		strcpy(existingUsers[i].password, newUser.password);
 		totalUsers++;
 	}
-	pthread_mutex_unlock(&mutex2);
+	// pthread_mutex_unlock(&mutex2);
 	return 0;
+}
+
+int userActive(Packet newUser)
+{
+	int i;
+	for(i = 0; i < totalUsers; i++)
+	{
+		if(((strcmp(activeUsers[i].username, newUser.username)) == 0))
+		{
+			return 1;
+		}
+	}
+	return 0;
+}
+
+void addToActiveUsers(Packet newUser)
+{
+	strcpy(activeUsers[++totalUsers].username, newUser.username);
+	strcpy(activeUsers[++totalUsers].password, newUser.password);
+}
+
+void removeActiveUser(Packet newUser)
+{
+	int i;
+	for(i = 0; i < totalUsers; i++)
+	{
+		if(strcmp(activeUsers[i].username, newUser.username) == 0)
+		{
+				strcpy(activeUsers[i].username, NULL);
+				strcpy(activeUsers[i].password, NULL);
+		}
+	}
 }
 
 int *check_credentials(void *sock)
@@ -95,85 +127,89 @@ int *check_credentials(void *sock)
 
 	printf("\npacket\n\tuser: %s\n\tpassword: %s\n\theader: %s\n", p.username, p.password, p.header);
 
-	// while(!approve)
-		if((strcmp(p.header, "REGISTER")) == 0)
+	if((strcmp(p.header, "REGISTER")) == 0)
+	{
+		approve = 0;
+		if(userExists(p) || userActive(p))
 		{
 			approve = 0;
-			if(userExists(p))
-			{
-				approve = 0;
-				int convNumber = htonl(approve);
-				printf("\nUser exists\n");
-				write(cl.sockno, &convNumber, sizeof(convNumber));
-				pthread_mutex_lock(&mutex3);
-				printf("%s disconnected\n",cl.ip);
-					for(i = 0; i < n; i++) {
-						if(clients[i] == cl.sockno) {
-							j = i;
-							while(j < n-1) {
-								clients[j] = clients[j+1];
-								j++;
-							}
+			int convNumber = htonl(approve);
+			printf("\nUser exists\n");
+			send(cl.sockno, &convNumber, sizeof(convNumber), 0);
+			// pthread_mutex_lock(&mutex3);
+			printf("%s disconnected\n",cl.ip);
+				for(i = 0; i < n; i++) {
+					if(clients[i] == cl.sockno) {
+						j = i;
+						while(j < n-1) {
+							clients[j] = clients[j+1];
+							j++;
 						}
 					}
-					n--;
+				}
+				n--;
+				// removeActiveUser(p);
+			// pthread_mutex_unlock(&mutex3);
+			return 0;
+		}
+		else
+		{
+			approve = 1;
+			int convNumber = htonl(approve);
+			printf("\nUser register succesful\n");
+			// addToActiveUsers(p);
+			// pthread_mutex_lock(&mutex3);
+			send(cl.sockno, &convNumber, sizeof(convNumber), 0);
+			// pthread_mutex_unlock(&mutex3);
+			return 1;
+		}
+	}
+	else
+	{
+		approve = 0;
+		if((strcmp(p.header, "LOGIN")) == 0)
+		{
+			if(!userExists(p) || userActive(p))
+			{
+
+				approve = 0;
+				int convNumber = htonl(approve);
+				printf("\nUser doesn't exist in database or already active\n");
+				send(cl.sockno, &convNumber, sizeof(convNumber), 0);
+				pthread_mutex_lock(&mutex3);
+				printf("%s disconnected\n",cl.ip);
+				for(i = 0; i < n; i++) {
+					if(clients[i] == cl.sockno) {
+						j = i;
+						while(j < n-1) {
+							clients[j] = clients[j+1];
+							j++;
+						}
+					}
+				}
+				n--;
+				// removeActiveUser(p);
 				pthread_mutex_unlock(&mutex3);
 				return 0;
 			}
 			else
 			{
-				approve = 1;
+				approve = 2;
 				int convNumber = htonl(approve);
-				printf("\nUser register succesful\n");
+				printf("\nUser login succesful\n");
+				// addToActiveUsers(p);
 				// pthread_mutex_lock(&mutex3);
-				write(cl.sockno, &convNumber, sizeof(convNumber));
+				send(cl.sockno, &convNumber, sizeof(convNumber), 0);
 				// pthread_mutex_unlock(&mutex3);
-				return 1;
+				return 2;
 			}
 		}
 		else
 		{
-			approve = 0;
-			if((strcmp(p.header, "LOGIN")) == 0)
-			{
-				if(!userExists(p))
-				{
-
-					approve = 0;
-					int convNumber = htonl(approve);
-					printf("\nUser doesn't exist in database\n");
-					write(cl.sockno, &convNumber, sizeof(convNumber));
-					pthread_mutex_lock(&mutex3);
-					printf("%s disconnected\n",cl.ip);
-					for(i = 0; i < n; i++) {
-						if(clients[i] == cl.sockno) {
-							j = i;
-							while(j < n-1) {
-								clients[j] = clients[j+1];
-								j++;
-							}
-						}
-					}
-					n--;
-					pthread_mutex_unlock(&mutex3);
-					return 0;
-				}
-				else
-				{
-					approve = 2;
-					int convNumber = htonl(approve);
-					printf("\nUser login succesful\n");
-					pthread_mutex_lock(&mutex3);
-					write(cl.sockno, &convNumber, sizeof(convNumber));
-					pthread_mutex_unlock(&mutex3);
-					return 2;
-				}
-			}
-			else
-			{
-				printf("This should not have happened\n");
-			}
+			printf("This should not have happened\n");
+			return 0;
 		}
+	}
 
 }
 
@@ -184,6 +220,7 @@ void *recvmg(void *sock)
 	int len;
 	int i;
 	int j;
+	// addToActiveUsers(p);
 	while((len = recv(cl.sockno,msg,500,0)) > 0) {
 		msg[len] = '\0';
 		send_to_all(msg,cl.sockno);
@@ -201,16 +238,17 @@ void *recvmg(void *sock)
 		}
 	}
 	n--;
+	// removeActiveUser(p);
 	pthread_mutex_unlock(&mutex);
 }
 
 
 int main(int argc,char **argv)
 {
-	struct sockaddr_in my_addr,their_addr;
+	struct sockaddr_in my_addr,client_addr;
 	int my_sock;
-	int their_sock;
-	socklen_t their_addr_size;
+	int client_sock;
+	socklen_t client_addr_size;
 	int portno;
 	char ipno[20];
 	pthread_t sendt,recvt;
@@ -230,7 +268,7 @@ int main(int argc,char **argv)
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(portno);
 	my_addr.sin_addr.s_addr = inet_addr(ipno);
-	their_addr_size = sizeof(their_addr);
+	client_addr_size = sizeof(client_addr);
 
 	while(bind(my_sock,(struct sockaddr *)&my_addr,sizeof(my_addr)) != 0) {
 		printf("Binding unsuccessful\nRetrying\n");
@@ -238,22 +276,22 @@ int main(int argc,char **argv)
 		// exit(1);
 	}
 
-	if(listen(my_sock,5) != 0) {
+	if(listen(my_sock,MAX_ALLOWED_USERS) != 0) {
 		perror("listening unsuccessful");
 		exit(1);
 	}
 
 	while(1) {
-		if((their_sock = accept(my_sock,(struct sockaddr *)&their_addr,&their_addr_size)) < 0) {
+		if((client_sock = accept(my_sock,(struct sockaddr *)&client_addr,&client_addr_size)) < 0) {
 			perror("accept unsuccessful");
 			exit(1);
 		}
 		pthread_mutex_lock(&mutex);
-		inet_ntop(AF_INET, (struct sockaddr *)&their_addr, ip, INET_ADDRSTRLEN);
+		inet_ntop(AF_INET, (struct sockaddr *)&client_addr, ip, INET_ADDRSTRLEN);
 		printf("%s connected\n",ip);
-		cl.sockno = their_sock;
+		cl.sockno = client_sock;
 		strcpy(cl.ip,ip);
-		clients[n] = their_sock;
+		clients[n] = client_sock;
 		n++;
 
 		if(check_credentials(&cl))
