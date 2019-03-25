@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <arpa/inet.h>
 #include <pthread.h>
+#include <errno.h>
 
 #define MAX_ALLOWED_USERS 100
 
@@ -102,17 +103,16 @@ void removeActiveUser(Packet newUser)
 	{
 		if(strcmp(activeUsers[i].username, newUser.username) == 0)
 		{
-				strcpy(activeUsers[i].username, NULL);
-				strcpy(activeUsers[i].password, NULL);
+				strcpy(activeUsers[i].username, "\0");
+				strcpy(activeUsers[i].password, "\0");
 		}
 	}
 }
 
-int *check_credentials(void *sock)
+int check_credentials(void *sock)
 {
 	struct client_info clientInfo = *((struct client_info *)sock);
 	Packet p;
-	char msg[500];
 	int len;
 	int i;
 	int j;
@@ -239,6 +239,8 @@ void *recvmg(void *sock)
 	n--;
 	// removeActiveUser(p);
 	pthread_mutex_unlock(&mutex);
+
+	return NULL;
 }
 
 
@@ -251,8 +253,8 @@ int main(int argc,char **argv)
 	int portno;
 	char ipno[20];
 	pthread_t recvt;
-	char msg[500];
-	int len;
+	// char msg[500];
+	// int len;
 	struct client_info clientInfo;
 	char ip[INET_ADDRSTRLEN];
 

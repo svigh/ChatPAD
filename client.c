@@ -17,16 +17,6 @@ struct PACKET{
 #pragma pack(0)
 typedef struct PACKET Packet;
 
-// char *packet_to_char(Packet processPacket)
-// {
-// 	char *loginCred = (char * )malloc(sizeof(processPacket));
-// 	strcpy(loginCred, "LOGIN::");
-// 	strcat(loginCred, processPacket.username);
-// 	strcat(loginCred, "::");
-// 	strcat(loginCred, processPacket.password);
-// 	loginCred[strcspn(loginCred, "\n")] = 0;
-// 	return loginCred;
-// }
 
 Packet create_login_packet(char *username, char *password)
 {
@@ -56,25 +46,23 @@ void *recvmg(void *sock)
 		fputs(msg,stdout);
 		memset(msg,'\0',sizeof(msg));
 	}
+
+	return NULL;
 }
 
 int main(int argc, char **argv)
 {
 	struct sockaddr_in their_addr;
 	int my_sock;
-	int their_sock;
-	int their_addr_size;
 	int portno;
 	char ipno[20];
-	pthread_t sendt,recvt;
+	pthread_t recvt;
 	char msg[500];
 	char username[100];
 	char password[100];
 	char res[600];
 	char ip[INET_ADDRSTRLEN];
 	int len;
-
-	Packet loginPacket;
 
 	if(argc > 5) {
 		printf("too many arguments");
@@ -114,11 +102,11 @@ int main(int argc, char **argv)
 		{
 			case 1:
 				printf("Username: ");
-				scanf("%s", &username);
+				scanf("%s", username);
 				username[strcspn(username, "\n")] = 0; // Remove trailing newline
 
 				printf("Password: ");
-				scanf("%s", &password);
+				scanf("%s", password);
 				password[strcspn(password, "\n")] = 0;
 
 				Packet registerCredentialsPacket = create_register_packet(username, password);
@@ -147,11 +135,11 @@ int main(int argc, char **argv)
 
 			case 2:
 				printf("Username: ");
-				scanf("%s", &username);
+				scanf("%s", username);
 				username[strcspn(username, "\n")] = 0; // Remove trailing newline
 
 				printf("Password: ");
-				scanf("%s", &password);
+				scanf("%s", password);
 				password[strcspn(password, "\n")] = 0;
 
 				Packet loginCredentialsPacket = create_login_packet(username, password);
@@ -183,7 +171,7 @@ int main(int argc, char **argv)
 
 	pthread_create(&recvt,NULL,recvmg,&my_sock);
 
-	while(scanf("%s", &msg) > 0) {
+	while(scanf("%s", msg) > 0) {
 		strcpy(res, username);
 		strcat(res,":");
 		strcat(res,msg);
