@@ -156,11 +156,10 @@ int *check_credentials(void *sock)
 		{
 			approve = 1;
 			int convNumber = htonl(approve);
-			printf("\nUser register succesful\n");
-			// addToActiveUsers(p);
-			// pthread_mutex_lock(&mutex3);
-			send(clientInfo.sockno, &convNumber, sizeof(convNumber), 0);
-			// pthread_mutex_unlock(&mutex3);
+
+			len = send(clientInfo.sockno, &convNumber, sizeof(convNumber), 0);
+
+			printf("\nUser register succesful: %d , %d\n ", len, errno);
 			return 1;
 		}
 	}
@@ -264,6 +263,7 @@ int main(int argc,char **argv)
 	strcpy(ipno, argv[1]);
 	portno = atoi(argv[2]);
 	my_sock = socket(AF_INET,SOCK_STREAM,0);
+
 	memset(my_addr.sin_zero,'\0',sizeof(my_addr.sin_zero));
 	my_addr.sin_family = AF_INET;
 	my_addr.sin_port = htons(portno);
@@ -273,7 +273,6 @@ int main(int argc,char **argv)
 	while(bind(my_sock,(struct sockaddr *)&my_addr,sizeof(my_addr)) != 0) {
 		printf("Binding unsuccessful\nRetrying\n");
 		my_addr.sin_port = htons(++portno);
-		// exit(1);
 	}
 
 	if(listen(my_sock,MAX_ALLOWED_USERS) != 0) {

@@ -83,9 +83,6 @@ int main(int argc, char **argv)
 
 	strcpy(ipno, argv[1]);
 	portno = atoi(argv[2]);
-	// strcpy(loginPacket.username,argv[1]);
-	// strcpy(loginPacket.password,argv[2]);
-
 
 	my_sock = socket(AF_INET,SOCK_STREAM,0);
 	memset(their_addr.sin_zero,'\0',sizeof(their_addr.sin_zero));
@@ -101,7 +98,6 @@ int main(int argc, char **argv)
 
 	inet_ntop(AF_INET, (struct sockaddr *)&their_addr, ip, INET_ADDRSTRLEN);
 	printf("connected to %s, start chatting\n",ip);
-	pthread_create(&recvt,NULL,recvmg,&my_sock);
 
 	int optionSelect = 0;
 	int approve = 0;
@@ -119,15 +115,11 @@ int main(int argc, char **argv)
 			case 1:
 				printf("Username: ");
 				scanf("%s", &username);
-				// fgets(username, 100, stdin);
 				username[strcspn(username, "\n")] = 0; // Remove trailing newline
 
 				printf("Password: ");
 				scanf("%s", &password);
-				// fgets(password, 100, stdin);
 				password[strcspn(password, "\n")] = 0;
-
-				// printf("\nuser: %s \t pass: %s", username, password);
 
 				Packet registerCredentialsPacket = create_register_packet(username, password);
 				printf("\npacket\n\tuser: %s\n\tpassword: %s\n\theader: %s\n", registerCredentialsPacket.username, registerCredentialsPacket.password, registerCredentialsPacket.header);
@@ -137,7 +129,8 @@ int main(int argc, char **argv)
 					perror("message not sent");
 					exit(1);
 				}
-				return_status = recv(my_sock, &approve, sizeof(int), 0);
+				return_status = read(my_sock, &approve, sizeof(int));
+				// printf("Got recv bytes: %d\n", return_status);
 				approve = ntohl(approve);
 				if(approve)
 				{
@@ -155,15 +148,11 @@ int main(int argc, char **argv)
 			case 2:
 				printf("Username: ");
 				scanf("%s", &username);
-				// fgets(username, 100, stdin);
 				username[strcspn(username, "\n")] = 0; // Remove trailing newline
 
 				printf("Password: ");
 				scanf("%s", &password);
-				// fgets(password, 100, stdin);
 				password[strcspn(password, "\n")] = 0;
-
-				// printf("\nuser: %s \t pass: %s", username, password);
 
 				Packet loginCredentialsPacket = create_login_packet(username, password);
 				printf("\npacket\n\tuser: %s\n\tpassword: %s\n\theader: %s\n", loginCredentialsPacket.username, loginCredentialsPacket.password, loginCredentialsPacket.header);
@@ -191,8 +180,9 @@ int main(int argc, char **argv)
 				exit(-1);
 		}
 	}
-	// fgets(msg, 500, stdin);
-	// while(fgets(msg,500,stdin) > 0) {
+
+	pthread_create(&recvt,NULL,recvmg,&my_sock);
+
 	while(scanf("%s", &msg) > 0) {
 		strcpy(res, username);
 		strcat(res,":");
