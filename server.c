@@ -205,16 +205,8 @@ int check_credentials(void *sock)
 		}
 		else
 		{
-			if((strcmp(p.header, "USERS")) == 0)
-			{
-				send(clientInfo.sockno, (void *)&existingUsers, sizeof(Packet), 0);
-				return 3;
-			}
-			else
-			{
-				printf("This should not have happened\n");
-				return 0;
-			}
+			printf("This should not have happened\n");
+			return 0;
 		}
 
 	}

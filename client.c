@@ -18,22 +18,13 @@ struct PACKET{
 typedef struct PACKET Packet;
 
 
-Packet create_login_packet(char *username, char *password)
-{
-	Packet loginPacket;
-	strcpy(loginPacket.header, "LOGIN");
-	strcpy(loginPacket.username, username);
-	strcpy(loginPacket.password, password);
-	return loginPacket;
-}
-
 Packet create_packet(char *username, char *password, char *header)
 {
-	Packet loginPacket;
-	strcpy(loginPacket.header, header);
-	strcpy(loginPacket.username, username);
-	strcpy(loginPacket.password, password);
-	return loginPacket;
+	Packet newPacket;
+	strcpy(newPacket.header, header);
+	strcpy(newPacket.username, username);
+	strcpy(newPacket.password, password);
+	return newPacket;
 }
 
 void *recvmg(void *sock)
@@ -96,7 +87,7 @@ int main(int argc, char **argv)
 		printf("Select option \
 \n\t1)REGISTER \
 \n\t2)LOGIN \
-\n\t3)USERS DB\n");
+\n");
 		scanf("%d", &optionSelect);
 
 		switch(optionSelect)
@@ -164,19 +155,6 @@ int main(int argc, char **argv)
 					printf("Not APPROVED\n\tUSER NOT IN DATABASE OR ALREADY ACTIVE\n");
 					exit(-1);
 				}
-				break;
-
-			case 3:
-				approve = 0;
-				Packet users;
-				Packet getUsersPacket = create_packet("anon" , "anon", "USERS");
-				len = send(my_sock, (void*)&getUsersPacket,sizeof(Packet), 0);
-				if(len < 0) {
-					perror("message not sent\n");
-					exit(1);
-				}
-				recv(my_sock, (void *)&users, sizeof(Packet), 0);
-				printf("USERS: \n\tusername:%s\n", users.username);
 				break;
 
 			default:
