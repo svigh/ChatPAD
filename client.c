@@ -27,10 +27,10 @@ Packet create_login_packet(char *username, char *password)
 	return loginPacket;
 }
 
-Packet create_register_packet(char *username, char *password)
+Packet create_packet(char *username, char *password, char *header)
 {
 	Packet loginPacket;
-	strcpy(loginPacket.header, "REGISTER");
+	strcpy(loginPacket.header, header);
 	strcpy(loginPacket.username, username);
 	strcpy(loginPacket.password, password);
 	return loginPacket;
@@ -95,7 +95,8 @@ int main(int argc, char **argv)
 	{
 		printf("Select option \
 \n\t1)REGISTER \
-\n\t2)LOGIN\n");
+\n\t2)LOGIN \
+\n\t3)USERS DB\n");
 		scanf("%d", &optionSelect);
 
 		switch(optionSelect)
@@ -109,7 +110,7 @@ int main(int argc, char **argv)
 				scanf("%s", password);
 				password[strcspn(password, "\n")] = 0;
 
-				Packet registerCredentialsPacket = create_register_packet(username, password);
+				Packet registerCredentialsPacket = create_packet(username, password, "REGISTER");
 				printf("\npacket\n\tuser: %s\n\tpassword: %s\n\theader: %s\n", registerCredentialsPacket.username, registerCredentialsPacket.password, registerCredentialsPacket.header);
 
 				len = send(my_sock, (void*)&registerCredentialsPacket,sizeof(Packet), 0);
@@ -142,7 +143,7 @@ int main(int argc, char **argv)
 				scanf("%s", password);
 				password[strcspn(password, "\n")] = 0;
 
-				Packet loginCredentialsPacket = create_login_packet(username, password);
+				Packet loginCredentialsPacket = create_packet(username, password, "LOGIN");
 				printf("\npacket\n\tuser: %s\n\tpassword: %s\n\theader: %s\n", loginCredentialsPacket.username, loginCredentialsPacket.password, loginCredentialsPacket.header);
 
 				len = send(my_sock, (void*)&loginCredentialsPacket,sizeof(Packet), 0);
@@ -164,6 +165,20 @@ int main(int argc, char **argv)
 					exit(-1);
 				}
 				break;
+
+			case 3:
+				approve = 0;
+				Packet users;
+				Packet getUsersPacket = create_packet("anon" , "anon", "USERS");
+				len = send(my_sock, (void*)&getUsersPacket,sizeof(Packet), 0);
+				if(len < 0) {
+					perror("message not sent\n");
+					exit(1);
+				}
+				recv(my_sock, (void *)&users, sizeof(Packet), 0);
+				printf("USERS: \n\tusername:%s\n", users.username);
+				break;
+
 			default:
 				exit(-1);
 		}
